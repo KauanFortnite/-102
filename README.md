@@ -1,32 +1,100 @@
-local Scripts = {
-	{
-		PlacesIds = {2753915549, 4442272183, 7449423635},
-		Path = "BloxFruits.luau"
-	},
-	{
-		PlacesIds = {10260193230},
-		Path = "MemeSea.luau"
-	}
+--// Services
+local Players      = game:GetService("Players")
+local StarterGui   = game:GetService("StarterGui")
+local RunService   = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+
+--// Your custom animations
+local customAnimations = {
+    Stand = "rbxassetid://74738520664045",
+    Walk  = "rbxassetid://74738520664045",
+    Run   = "rbxassetid://74738520664045"
 }
 
-local fetcher, urls = {}, {}
+local currentAnimationTrack = nil
+local humanoid
 
-urls.Owner = "https://raw.githubusercontent.com/tlredz/";
-urls.Repository = `{ urls.Owner }Scripts/refs/heads/main/`;
-urls.Translator = `{ urls.Repository }Translator/`;
-urls.Utils = `{ urls.Repository }Utils/`;
+--------------------------------------------------------------------
+-- 1. Animation handling
+--------------------------------------------------------------------
+local function playAnimation(id)
+    if currentAnimationTrack then
+        currentAnimationTrack:Stop()
+        currentAnimationTrack:Destroy()
+    end
 
-do
-	local _ENV = (getgenv or getrenv or getfenv)()
-	
-	if _ENV.rz_error_message then
-		_ENV.rz_error_message:Destroy()
-	end
-	
-	local identifyexecutor = identifyexecutor or (function() return "Unknown" end)
-	
-	local function CreateMessageError(Text)
-		_ENV.loadedFarm = nil
+    if humanoid and id then
+        local anim = Instance.new("Animation")
+        anim.AnimationId = id
+        currentAnimationTrack = humanoid:LoadAnimation(anim)
+        currentAnimationTrack:Play()
+    end
+end
+
+local function onHumanoidStateChanged()
+    if not humanoid then return end
+
+    local speed = humanoid.MoveDirection.Magnitude
+
+    if speed > 8 then
+        if not currentAnimationTrack or currentAnimationTrack.Animation.AnimationId ~= customAnimations.Run then
+            playAnimation(customAnimations.Run)
+        end
+    elseif speed > 0.1 then
+        if not currentAnimationTrack or currentAnimationTrack.Animation.AnimationId ~= customAnimations.Walk then
+            playAnimation(customAnimations.Walk)
+        end
+    else
+        if not currentAnimationTrack or currentAnimationTrack.Animation.AnimationId ~= customAnimations.Stand then
+            playAnimation(customAnimations.Stand)
+        end
+    end
+end
+
+--------------------------------------------------------------------
+-- 2. Character setup
+--------------------------------------------------------------------
+local function setupCharacter(char)
+    humanoid = char:WaitForChild("Humanoid")
+
+    -- Connect the per-frame update (only once per character)
+    RunService.RenderStepped:Connect(onHumanoidStateChanged)
+
+    -- Start with the stand animation
+    playAnimation(customAnimations.Stand)
+end
+
+-- Existing character
+if player.Character then
+    setupCharacter(player.Character)
+end
+
+-- Respawn / new character
+player.CharacterAdded:Connect(setupCharacter)
+
+--------------------------------------------------------------------
+-- 3. Notification
+--------------------------------------------------------------------
+-- The picture shows:
+--   Title: "Fe Headless Head"
+--   Text : "By Void_knght on YouTube"
+--   Icon : the red Roblox character thumbnail
+--   A green progress bar (handled automatically by Roblox)
+
+local function sendCustomNotification()
+    pcall(function()
+        StarterGui:SetCore("SendNotification", {
+            Title    = "Fe Headless Head",
+            Text     = "By Void_knght on YouTube",
+            Icon     = "rbxthumb://type=Avatar&id=" .. player.UserId .. "&w=150&h=150", -- red avatar thumbnail
+            Duration = 5
+        })
+    end)
+end
+
+-- Show it once when the script runs (you can also tie it to an event)
+sendCustomNotification()		_ENV.loadedFarm = nil
 		_ENV.OnFarm = false
 		
 		local Message = Instance.new("Message", workspace)
